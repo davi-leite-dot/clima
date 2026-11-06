@@ -35,14 +35,14 @@ button{font:inherit;font-weight:600;padding:12px 18px;border-radius:12px;border:
     <div class="row"><input id="pw" name="pw" type="password" autocomplete="current-password" required autofocus><button type="submit" id="go">Entrar</button></div>
     <p class="err" id="err" role="alert" hidden>Senha incorreta. Tente de novo.</p>
   </form>
-  <p class="foot">Dados de 06/11 às 11h26 (Brasília). Acesso restrito · o navegador lembra a senha por 30 dias.</p>
+  <p class="foot">Dados de 06/11 às 12h26 (Brasília). Acesso restrito · a senha é pedida a cada acesso.</p>
 </main>
 <p class="wait" id="wait">Abrindo…</p>
 <script>
 (function(){var R="./";
 function b64(s){var b=atob(s),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}
 function t64(u){var s='';u=new Uint8Array(u);for(var i=0;i<u.length;i++)s+=String.fromCharCode(u[i]);return btoa(s)}
-function stored(){try{var o=JSON.parse(localStorage.getItem('ofi_k')||'null');if(o&&o.exp>Date.now())return o.k}catch(e){}return null}
+function stored(){try{var o=JSON.parse(sessionStorage.getItem('ofi_k')||'null');if(o&&o.exp>Date.now())return o.k}catch(e){}return null}
 async function dec(k,buf){var u=new Uint8Array(buf);var pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:u.slice(0,12)},k,u.slice(12));
  return await new Response(new Blob([pt]).stream().pipeThrough(new DecompressionStream('gzip'))).text()}
 async function open(raw){var k=await crypto.subtle.importKey('raw',b64(raw),'AES-GCM',false,['decrypt']);
@@ -56,9 +56,9 @@ document.getElementById('f').addEventListener('submit',async function(e){e.preve
   var bits=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:b64(m.salt),iterations:m.iter},base,256);
   var k=await crypto.subtle.importKey('raw',bits,'AES-GCM',false,['decrypt']);
   var t=await dec(k,b64(m.check));if(t!=='ok')throw 0;
-  var raw=t64(bits);try{localStorage.setItem('ofi_k',JSON.stringify({k:raw,exp:Date.now()+30*864e5}))}catch(_){}
+  var raw=t64(bits);try{sessionStorage.setItem('ofi_k',JSON.stringify({k:raw,exp:Date.now()+15*6e4}))}catch(_){}
   await open(raw)}catch(err){document.getElementById('err').hidden=false;b.disabled=false;b.textContent='Entrar';document.getElementById('pw').select()}});
-var raw=stored();if(raw){open(raw).catch(function(){try{localStorage.removeItem('ofi_k')}catch(_){}cover()})}else cover();
+var raw=stored();if(raw){open(raw).catch(function(){try{sessionStorage.removeItem('ofi_k')}catch(_){}cover()})}else cover();
 })();
 </script>
 </body></html>
