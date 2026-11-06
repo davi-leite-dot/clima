@@ -9,6 +9,7 @@ Uso (na raiz do repositório):
   OFI_PW=... python3 ops/gh_db.py apply plan_painel.json plan_skysat_1.json ...   (rotina de hora em hora)
   OFI_PW=... python3 ops/gh_db.py apply --wf plan.json                            (rotina de 3 h: iss/obs/radar/wk/enso -> wf_*)
   OFI_PW=... python3 ops/gh_db.py dump <pasta com <coleção>/<doc>.json>           (reescreve tudo a partir de uma leitura completa)
+  OFI_PW=... python3 ops/gh_db.py merge <pasta com <coleção>/<doc>.json>          (grava só os documentos lidos por cima do que já existe)
 
 Os planos são as listas "writes" do ArtifactData batch ({op, collection, doc_id, file_path|data}); o script aplica
 set, update e delete do mesmo jeito que o banco do artifact, recorta as coleções como as páginas pedem e refaz os
@@ -133,6 +134,22 @@ def dump(src):
     print('coleções gravadas:', ', '.join(sorted(cc)))
 
 
+def merge(src):
+    k = key()
+    cc = {}
+    for d in sorted(glob.glob(f'{src}/*')):
+        if not os.path.isdir(d):
+            continue
+        c = os.path.basename(d)
+        m = load(k, 'db', c)
+        for f in sorted(glob.glob(f'{d}/*.json')):
+            m[os.path.basename(f)[:-5]] = json.load(open(f))
+        cc[c] = trim(c, m)
+    save_all(k, DIRS['clima'], cc)
+    derived(k, cc)
+    print('coleções mescladas:', ', '.join(sorted(cc)))
+
+
 if __name__ == '__main__':
     a = sys.argv[1:]
     if not a:
@@ -142,5 +159,7 @@ if __name__ == '__main__':
         apply([x for x in a[1:] if x != '--wf'], wf)
     elif a[0] == 'dump':
         dump(a[1])
+    elif a[0] == 'merge':
+        merge(a[1])
     else:
         sys.exit(__doc__)
